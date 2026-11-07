@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TMS Bag Check-In & Check-Out System</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              red: '#E51739',
+              dark: '#1A1A1A',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-slate-50 dark:bg-[#1A1A1A] text-slate-900 dark:text-slate-100 min-h-screen flex flex-col transition-colors duration-200">
+
+  <!-- Header Banner -->
+  <header class="bg-[#E51739] border-b border-red-700 sticky top-0 z-30 shadow-md text-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="p-2 bg-white rounded-lg text-[#E51739] shadow-md font-extrabold flex items-center justify-center">
+          <i data-lucide="package" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
+            Magnolia @ Heritage Green 05812
+          </h1>
+        </div>
+      </div>
+
+      <div class="flex items-center space-x-3">
+        <!-- Navigation Tabs -->
+        <nav class="flex space-x-1 bg-red-800/80 p-1 rounded-xl border border-red-600 overflow-x-auto">
+          <button onclick="switchTab('manage')" id="nav-manage" class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 bg-white text-[#E51739] shadow-sm">
+            <i data-lucide="refresh-cw" class="w-4 h-4"></i> Check In / Out
+            <span id="checkout-badge" class="bg-[#1A1A1A] text-white font-bold text-[10px] px-1.5 py-0.2 rounded-full hidden">0</span>
+          </button>
+          <button onclick="switchTab('inventory')" id="nav-inventory" class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 text-red-100 hover:text-white hover:bg-red-700/50">
+            <i data-lucide="package" class="w-4 h-4"></i> Bags
+          </button>
+          <button onclick="switchTab('history')" id="nav-history" class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 text-red-100 hover:text-white hover:bg-red-700/50">
+            <i data-lucide="file-text" class="w-4 h-4"></i> History
+          </button>
+          <button onclick="switchTab('settings')" id="nav-settings" class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 text-red-100 hover:text-white hover:bg-red-700/50">
+            <i data-lucide="settings" class="w-4 h-4"></i> Locations
+          </button>
+        </nav>
+
+        <!-- Theme Toggle Button -->
+        <button onclick="toggleTheme()" id="theme-toggle" title="Switch Theme" class="p-2 rounded-xl bg-red-800/80 hover:bg-red-700 text-white border border-red-600 transition-all flex items-center justify-center shadow-sm">
+          <i data-lucide="sun" class="w-4 h-4 text-amber-300" id="theme-icon"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+
+    <!-- Status Bar -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div id="card-total" class="bg-white dark:bg-[#222222] border border-slate-200 dark:border-slate-700 p-4 rounded-xl flex justify-between items-center shadow-sm">
+        <div>
+          <span class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Total Bags</span>
+          <div id="stat-total" class="text-2xl font-extrabold text-[#1A1A1A] dark:text-white mt-1">0 Bags</div>
+        </div>
+        <i data-lucide="package" class="w-6 h-6 text-[#E51739]"></i>
+      </div>
+
+      <div id="card-avail" class="bg-white dark:bg-[#222222] border border-slate-200 dark:border-slate-700 p-4 rounded-xl flex justify-between items-center shadow-sm">
+        <div>
+          <span class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 uppercase">Available In Catering Room</span>
+          <div id="stat-avail" class="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400 mt-1">0 Bags</div>
+        </div>
+        <i data-lucide="check-circle-2" class="w-6 h-6 text-emerald-600 dark:text-emerald-400"></i>
+      </div>
+
+      <div id="card-out" class="bg-white dark:bg-[#222222] border border-slate-200 dark:border-slate-700 p-4 rounded-xl flex justify-between items-center shadow-sm">
+        <div>
+          <span class="text-xs font-semibold text-[#E51739] dark:text-red-400 uppercase">Currently Checked Out</span>
+          <div id="stat-out" class="text-2xl font-extrabold text-[#E51739] dark:text-red-400 mt-1">0 Bags</div>
+        </div>
+        <i data-lucide="arrow-up-right" class="w-6 h-6 text-[#E51739] dark:text-red-400"></i>
+      </div>
+    </div>
+
+    <!-- TAB 1: CHECK IN / CHECK OUT VIEW -->
+    <div id="tab-content-manage" class="space-y-6">
+      <div class="bg-white dark:bg-[#222222] border border-slate-200 dark:border-slate-700 rounded-2xl shadow-xl overflow-hidden">
+        <div class="bg-[#1A1A1A] p-6 border-b border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 text-white">
+          <div>
+            <select id="manage-mode-select" onchange="setManageMode(this.value)" class="bg-slate-900 border-2 border-[#E51739] hover:border-red-400 text-white font-extrabold text-lg sm:text-xl rounded-xl px-4 py-2 focus:outline-none cursor-pointer shadow-md">
+              <option value="checkout">Check Out TMS Bags</option>
+              <option value="checkin">Check In TMS Bags</option>
+            </select>
+            <p id="manage-mode-desc" class="text-xs text-slate-300 mt-2">Select available bags across sizes and assign them to a destination location and group.</p>
+          </div>
+
+          <div class="flex items-center gap-2 bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-800">
+            <span class="text-xs text-slate-300">Current Mode:</span>
+            <span id="manage-mode-badge" class="text-xs font-bold px-2 py-0.5 rounded-md bg-[#E51739]/20 text-red-400 border border-red-500/30">Check Out</span>
+          </div>
+        </div>
+
+        <div class="p-6">
+          <!-- Check Out Form -->
+          <div id="checkout-view" class="space-y-6">
+            <form onsubmit="handleCheckout(event)" class="space-y-6">
+              <div class="space-y-4">
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                  1. Select Available Bags by Size
+                </label>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="checkout-sizes-grid">
+                  <!-- Rendered dynamically -->
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+                <div>
+                  <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2">2. Destination Location</label>
+                  <select id="out-location" onchange="handleLocationChange(this.value)" class="w-full bg-white dark:bg-[#1A1A1A] border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-[#E51739]">
+                    <option value="">-- Choose Location --</option>
+                  </select>
+                  <input type="text" id="out-location-custom" placeholder="" oninput="customLocationVal = this.value" class="mt-2 w-full bg-white dark:bg-[#1A1A1A] border border-[#E51739] rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none hidden" />
+                </div>
+
+                <div>
+                  <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2">3. Group</label>
+                  <select id="out-group" onchange="customGroupVal = this.value" class="w-full bg-white dark:bg-[#1A1A1A] border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-[#E51739]">
+                    <option value="">-- Choose Group --</option>
+                  </select>
+                  <input type="text" id="out-group-custom" placeholder="" oninput="customGroupVal = this.value" class="mt-2 w-full bg-white dark:bg-[#1A1A1A] border border-[#E51739] rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none hidden" />
+                </div>
+
+                <div>
+                  <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2">4. Date</label>
+                  <input type="date" id="out-date" class="w-full bg-white dark:bg-[#1A1A1A] border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-[#E51739]" />
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2">5. Notes (Optional)</label>
+                <input type="text" id="out-notes" placeholder="" class="w-full bg-white dark:bg-[#1A1A1A] border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-[#E51739]" />
+              </div>
+
+              <button type="submit" id="checkout-submit-btn" class="w-full py-3.5 rounded-xl bg-[#E51739] hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-sm shadow-lg shadow-red-600/30 transition-all flex items-center justify-center gap-2">
+                <i data-lucide="arrow-up-right" class="w-5 h-5"></i> Check Out Selected Bags
+              </button>
+            </form>
+          </div>
+
+          <!-- Check In View -->
+          <div id="checkin-view" class="space-y-6 hidden">
+            <div id="checkin-groups-container" class="space-y-6">
+              <!-- Rendered dynamically -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: BAGS VIEW -->
+    <div id="tab-content-inventory" class="space-y-4 hidden">
+      <div class="bg-white dark:bg-[#222222] border border-slate-200 dark:border-slate-700 p-6 rounded-2xl shadow-xl space-y-4">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <h2 class="text-lg font-bold text-[#1A1A1A] dark:text-white flex items-center gap-2">
+            <i data-lucide="package" class="text-[#E51739] w-5 h-5"></i> Bags Roster
+          </h2>
+          <div class="flex items-center gap-2">
+            <button onclick="openModal('add-bag')" class="px-3 py-1.5 rounded-lg bg-[#E51739] hover:bg-red-700 text-white font-bold text-xs transition-all flex items-center gap-1.5 shadow-sm">
+              <i data-lucide="plus" class="w-4 h-4"></i> Add Bag
+            </button>
+            <button onclick="openModal('remove-bag')" class="px-3 py-1.5 rounded-lg bg-rose-50 dark:bg-rose-500/20 hover:bg-rose-600 text-rose-700 dark:text-rose-300 hover:text-white border border-rose-200 dark:border-rose-500/40 font-bold text-xs transition-all flex items-center gap-1.5 shadow-sm">
+              <i data-lucide="trash-2" class="w-4 h-4"></i> Remove Bag
+            </button>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-sm text-slate-700 dark:text-slate-300">
+            <thead class="bg-slate-100 dark:bg-[#1A1A1A] text-xs uppercase text-slate-600 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700">
+              <tr>
+                <th class="px-4 py-3">Bag ID</th>
+                <th class="px-4 py-3">Size</th>
+                <th class="px-4 py-3">Status</th>
+                <th class="px-4 py-3">Current Location</th>
+                <th class="px-4 py-3">Group</th>
+                <th class="px-4 py-3">Date Checked Out</th>
+              </tr>
+            </thead>
+            <tbody id="bags-table-body" class="divide-y divide-slate-200 dark:divide-slate-800">
+              <!-- Rendered dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: HISTORY VIEW -->
+    <div id="tab-content-history" class="space-y-5 hidden">
+      <div class="bg-white dark:bg-[#222222] border border-slate-200 dark:border-slate-700 p-6 rounded-2xl shadow-xl space-y-5">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div>
+            <h2 class="text-lg font-bold text-[#1A1A1A] dark:text-white flex items-center gap-2">
+              <i data-lucide="file-text" class="text-[#E51739] w-5 h-5"></i> History & Audit Trail
+            </h2>
+          </div>
+          <button onclick="exportCSV()" class="px-3.5 py-2 rounded-lg bg-slate-100 dark:bg-[#1A1A1A] hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 text-xs font-semibold transition-all flex items-center gap-2 border border-slate-200 dark:border-slate-700 shadow-sm">
+            <i data-lucide="download" class="w-4 h-4"></i> Export CSV Log
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-3 p-3 rounded-xl border bg-slate-50 dark:bg-[#1A1A1A] border-slate-200 dark:border-slate-700">
+          <div class="relative md:col-span-2">
+            <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-3"></i>
+            <input type="text" id="history-search" oninput="renderHistory()" placeholder="" class="w-full bg-white dark:bg-[#222222] border border-slate-300 dark:border-slate-700 rounded-lg pl-9 pr-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-[#E51739]" />
+          </div>
+          <div>
+            <select id="history-filter-action" onchange="renderHistory()" class="w-full bg-white dark:bg-[#222222] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-[#E51739]">
+              <option value="ALL">All Actions</option>
+              <option value="CHECK_OUT">Check Out Only</option>
+              <option value="CHECK_IN">Check In Only</option>
+            </select>
+          </div>
+          <div>
+            <select id="history-filter-size" onchange="renderHistory()" class="w-full bg-white dark:bg-[#222222] border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-[#E51739]">
+              <option value="ALL">All Sizes</option>
+              <option value="XS">XS</option>
+              <option value="SM">SM</option>
+              <option value="LG">LG</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="history-batches-container" class="space-y-4">
+          <!-- Rendered dynamically -->
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: LOCATIONS VIEW -->
+    <div id="tab-content-settings" class="space-y-6 hidden">
+      <div class="bg-white dark:bg-[#222222] border border-slate-200 dark:border-slate-700 p-6 rounded-2xl shadow-xl space-y-6">
+        <div>
+          <h2 class="text-lg font-bold text-[#1A1A1A] dark:text-white flex items-center gap-2">
+            <i data-lucide="map-pin" class="text-[#E51739] w-5 h-5"></i> Locations
+          </h2>
+        </div>
+
+        <div class="p-4 rounded-xl border flex flex-col sm:flex-row gap-3 items-center bg-slate-50 dark:bg-[#1A1A1A] border-slate-200 dark:border-slate-700">
+          <input type="text" id="new-loc-input" placeholder="" class="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#E51739] w-full bg-white dark:bg-[#222222] border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white" />
+          <button onclick="addLocation()" class="px-4 py-2 rounded-lg bg-[#E51739] hover:bg-red-700 text-white font-bold text-xs transition-all flex items-center gap-2 shrink-0 w-full sm:w-auto justify-center">
+            <i data-lucide="plus" class="w-4 h-4"></i> Add Location
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="locations-grid">
+          <!-- Rendered dynamically -->
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-[#1A1A1A] border-t border-slate-800 py-4 text-center text-xs text-slate-400">
+    Magnolia @ Heritage Green 05812
+  </footer>
+
+  <!-- MODALS -->
+  <div id="modal-add-bag" class="fixed inset-0 bg-[#1A1A1A]/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-[#222222] border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+      <div class="flex justify-between items-center pb-2 border-b border-slate-200 dark:border-slate-800">
+        <h3 class="font-bold text-base flex items-center gap-2 text-[#1A1A1A] dark:text-white">
+          <i data-lucide="plus" class="w-5 h-5 text-[#E51739]"></i> Add New TMS Bag
+        </h3>
+        <button onclick="closeModal('add-bag')" class="text-slate-400 hover:text-slate-700 dark:hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+      <form onsubmit="handleAddNewBag(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider mb-1 text-slate-700 dark:text-slate-300">Bag Number</label>
+          <input type="text" id="add-bag-number" required class="w-full bg-white dark:bg-[#1A1A1A] border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-[#E51739]" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider mb-1 text-slate-700 dark:text-slate-300">Bag Size</label>
+          <select id="add-bag-size" class="w-full bg-white dark:bg-[#1A1A1A] border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-[#E51739]">
+            <option value="XS">XS</option>
+            <option value="SM">SM</option>
+            <option value="LG">LG</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider mb-1 text-slate-700 dark:text-slate-300">Description / Equipment Notes (Optional)</label>
+          <input type="text" id="add-bag-desc" class="w-full bg-white dark:bg-[#1A1A1A] border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-[#E51739]" />
+        </div>
+        <div class="flex gap-2 pt-2">
+          <button type="submit" class="flex-1 py-2.5 rounded-xl bg-[#E51739] hover:bg-red-700 text-white font-bold text-xs">Add Bag</button>
+          <button type="button" onclick="closeModal('add-bag')" class="px-4 py-2.5 rounded-xl font-bold text-xs bg-slate-100 dark:bg-[#1A1A1A] hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="modal-remove-bag" class="fixed inset-0 bg-[#1A1A1A]/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-[#222222] border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+      <div class="flex justify-between items-center pb-2 border-b border-slate-200 dark:border-slate-800">
+        <h3 class="font-bold text-base flex items-center gap-2 text-[#1A1A1A] dark:text-white">
+          <i data-lucide="trash-2" class="w-5 h-5 text-rose-500"></i> Remove TMS Bag
+        </h3>
+        <button onclick="closeModal('remove-bag')" class="text-slate-400 hover:text-slate-700 dark:hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+      <form onsubmit="handleRemoveBag(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider mb-1 text-slate-700 dark:text-slate-300">Select Bag to Remove</label>
+          <select id="remove-bag-select" required class="w-full bg-white dark:bg-[#1A1A1A] border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-rose-500">
+            <option value="">-- Choose Bag --</option>
+          </select>
+        </div>
+        <div class="flex gap-2 pt-2">
+          <button type="submit" class="flex-1 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs">Remove Bag</button>
+          <button type="button" onclick="closeModal('remove-bag')" class="px-4 py-2.5 rounded-xl font-bold text-xs bg-slate-100 dark:bg-[#1A1A1A] hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- APPLICATION LOGIC SCRIPT -->
+  <script>
+    // State
+    let bags = JSON.parse(localStorage.getItem('tms_bags')) || [];
+    let locations = JSON.parse(localStorage.getItem('tms_locations')) || [];
+    let logs = JSON.parse(localStorage.getItem('tms_logs')) || [];
+    let theme = localStorage.getItem('tms_theme') || 'dark';
+
+    let activeTab = 'manage';
+    let manageMode = 'checkout';
+    let selectedBagIds = [];
+    let customLocationVal = '';
+    let customGroupVal = '';
+
+    // Initialize
+    window.addEventListener('DOMContentLoaded', () => {
+      applyTheme();
+      document.getElementById('out-date').value = new Date().toISOString().slice(0, 10);
+      renderAll();
+      lucide.createIcons();
+    });
+
+    function saveData() {
+      localStorage.setItem('tms_bags', JSON.stringify(bags));
+      localStorage.setItem('tms_locations', JSON.stringify(locations));
+      localStorage.setItem('tms_logs', JSON.stringify(logs));
+      localStorage.setItem('tms_theme', theme);
+    }
+
+    function renderAll() {
+      renderStatusBar();
+      renderCheckoutSizes();
+      renderLocationsDropdown();
+      renderCheckinView();
+      renderBagsTable();
+      renderHistory();
+      renderLocationsManager();
+      renderModalsSelects();
+      lucide.createIcons();
+    }
+
+    function switchTab(tabId) {
+      activeTab = tabId;
+      ['manage', 'inventory', 'history', 'settings'].forEach(t => {
+        const btn = document.getElementById(`nav-${t}`);
+        const content = document.getElementById(`tab-content-${t}`);
+        if (t === tabId) {
+          btn.className = "px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 bg-white text-[#E51739] shadow-sm";
+          content.classList.remove('hidden');
+        } else {
+          btn.className = "px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 text-red-100 hover:text-white hover:bg-red-700/50";
+          content.classList.add('hidden');
+        }
+      });
+      renderAll();
+    }
+
+    function setManageMode(mode) {
+      manageMode = mode;
+      const badge = document.getElementById('manage-mode-badge');
+      const desc = document.getElementById('manage-mode-desc');
+      const checkoutView = document.getElementById('checkout-view');
+      const checkinView = document.getElementById('checkin-view');
+
+      if (mode === 'checkout') {
+        badge.textContent = 'Check Out';
+        badge.className = "text-xs font-bold px-2 py-0.5 rounded-md bg-[#E51739]/20 text-red-400 border border-red-500/30";
+        desc.textContent = 'Select available bags across sizes and assign them to a destination location and group.';
+        checkoutView.classList.remove('hidden');
+        checkinView.classList.add('hidden');
+      } else {
+        badge.textContent = 'Check In';
+        badge.className = "text-xs font-bold px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-400 border border-emerald-500/30";
+        desc.textContent = 'View bags currently checked out grouped by location and return them.';
+        checkoutView.classList.add('hidden');
+        checkinView.classList.remove('hidden');
+      }
+      renderAll();
+    }
+
+    function toggleTheme() {
+      theme = theme === 'dark' ? 'light' : 'dark';
+      applyTheme();
+      saveData();
+    }
+
+    function applyTheme() {
+      const html = document.documentElement;
+      const icon = document.getElementById('theme-icon');
+      if (theme === 'light') {
+        html.classList.remove('dark');
+        icon.setAttribute('data-lucide', 'moon');
+        icon.className = "w-4 h-4 text-slate-100";
+      } else {
+        html.classList.add('dark');
+        icon.setAttribute('data-lucide', 'sun');
+        icon.className = "w-4 h-4 text-amber-300";
+      }
+      lucide.createIcons();
+    }
+
+    function renderStatusBar() {
+      const total = bags.length;
+      const checkedOut = bags.filter(b => b.status === 'Checked Out').length;
+      const available = bags.filter(b => b.status === 'Available').length;
+
+      document.getElementById('stat-total').textContent = `${total} Bags`;
+      document.getElementById('stat-avail').textContent = `${available} Bags`;
+      document.getElementById('stat-out').textContent = `${checkedOut} Bags`;
+
+      const badge = document.getElementById('checkout-badge');
+      if (checkedOut > 0) {
+        badge.textContent = checkedOut;
+        badge.classList.remove('hidden');
+      } else {
+        badge.classList.add('hidden');
+      }
+    }
+
+    // CHECKOUT RENDERERS
+    function renderCheckoutSizes() {
+      const grid = document.getElementById('checkout-sizes-grid');
+      grid.innerHTML = '';
+      ['XS', 'SM', 'LG'].forEach(size => {
+        const availBags = bags.filter(b => b.size === size && b.status === 'Available');
+        const div = document.createElement('div');
+        div.className = "bg-slate-50 dark:bg-[#1A1A1A] border border-slate-200 dark:border-slate-700 rounded-xl p-4 space-y-3";
+        
+        let bagsHtml = '';
+        if (availBags.length === 0) {
+          bagsHtml = '<p class="text-xs text-slate-400 italic py-2">No available bags</p>';
+        } else {
+          availBags.forEach(b => {
+            const isSelected = selectedBagIds.includes(b.id);
+            bagsHtml += `
+              <label class="flex items-center justify-between p-2 rounded-lg border text-xs cursor-pointer transition-all ${isSelected ? 'bg-red-50 dark:bg-red-950/40 border-[#E51739] text-[#E51739] dark:text-red-400 font-semibold' : 'bg-white dark:bg-[#262626] border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}">
+                <div class="flex items-center gap-2">
+                  <input type="checkbox" ${isSelected ? 'checked' : ''} onchange="toggleBagSelection('${b.id}')" class="rounded border-slate-300 dark:border-slate-600 bg-white dark:bg-[#1A1A1A] text-[#E51739] focus:ring-0" />
+                  <span>Bag #${b.id}</span>
+                </div>
+              </label>
+            `;
+          });
+        }
+
+        div.innerHTML = `
+          <div class="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
+            <span class="font-bold text-[#1A1A1A] dark:text-white text-sm">${size} Size</span>
+            <span class="text-xs text-slate-500 font-medium">${availBags.length} available</span>
+          </div>
+          <div class="space-y-1.5 max-h-40 overflow-y-auto pr-1">${bagsHtml}</div>
+          ${availBags.length > 0 ? `<button type="button" onclick="toggleAllSize('${size}')" class="text-[11px] text-[#E51739] hover:text-red-700 font-bold pt-1 block">Toggle All ${size}</button>` : ''}
+        `;
+        grid.appendChild(div);
+      });
+    }
+
+    function toggleBagSelection(id) {
+      if (selectedBagIds.includes(id)) {
+        selectedBagIds = selectedBagIds.filter(i => i !== id);
+      } else {
+        selectedBagIds.push(id);
+      }
+      renderCheckoutSizes();
+    }
+
+    function toggleAllSize(size) {
+      const availIds = bags.filter(b => b.size === size && b.status === 'Available').map(b => b.id);
+      const allSelected = availIds.every(id => selectedBagIds.includes(id));
+      if (allSelected) {
+        selectedBagIds = selectedBagIds.filter(id => !availIds.includes(id));
+      } else {
+        selectedBagIds = Array.from(new Set([...selectedBagIds, ...availIds]));
+      }
+      renderCheckoutSizes();
+    }
+
+    function renderLocationsDropdown() {
+      const select = document.getElementById('out-location');
+      const val = select.value;
+      select.innerHTML = '<option value="">-- Choose Location --</option>';
+      locations.forEach(l => {
+        const opt = document.createElement('option');
+        opt.value = l.name;
+        opt.textContent = l.name;
+        select.appendChild(opt);
+      });
+      const otherOpt = document.createElement('option');
+      otherOpt.value = 'OTHER';
+      otherOpt.textContent = '+ Other Location...';
+      select.appendChild(otherOpt);
+      select.value = val;
+    }
+
+    function handleLocationChange(locName) {
+      const customInput = document.getElementById('out-location-custom');
+      const groupSelect = document.getElementById('out-group');
+      const customGroupInput = document.getElementById('out-group-custom');
+
+      if (locName === 'OTHER') {
+        customInput.classList.remove('hidden');
+      } else {
+        customInput.classList.add('hidden');
+      }
+
+      groupSelect.innerHTML = '<option value="">-- Choose Group --</option>';
+      customGroupInput.classList.add('hidden');
+
+      const found = locations.find(l => l.name === locName);
+      if (found) {
+        found.groups.forEach(g => {
+          const opt = document.createElement('option');
+          opt.value = g;
+          opt.textContent = g;
+          groupSelect.appendChild(opt);
+        });
+        const otherOpt = document.createElement('option');
+        otherOpt.value = 'OTHER';
+        otherOpt.textContent = '+ Other Group...';
+        groupSelect.appendChild(otherOpt);
+      }
+    }
+
+    document.getElementById('out-group').addEventListener('change', (e) => {
+      const customGroupInput = document.getElementById('out-group-custom');
+      if (e.target.value === 'OTHER') {
+        customGroupInput.classList.remove('hidden');
+      } else {
+        customGroupInput.classList.add('hidden');
+      }
+    });
+
+    function handleCheckout(e) {
+      e.preventDefault();
+      const locSelect = document.getElementById('out-location').value;
+      const finalLoc = locSelect === 'OTHER' ? customLocationVal : locSelect;
+      const grpSelect = document.getElementById('out-group').value;
+      const finalGrp = grpSelect === 'OTHER' ? customGroupVal : grpSelect;
+      const date = document.getElementById('out-date').value;
+      const notes = document.getElementById('out-notes').value;
+
+      if (selectedBagIds.length === 0) {
+        alert('Please select at least one available TMS bag to check out.');
+        return;
+      }
+      if (!finalLoc) {
+        alert('Please select or specify a destination location.');
+        return;
+      }
+
+      bags = bags.map(b => {
+        if (selectedBagIds.includes(b.id)) {
+          return { ...b, status: 'Checked Out', location: finalLoc, group: finalGrp, checkoutDate: date };
+        }
+        return b;
+      });
+
+      selectedBagIds.forEach(id => {
+        const bag = bags.find(b => b.id === id);
+        logs.unshift({
+          id: 'log-' + Date.now() + '-' + id,
+          action: 'CHECK_OUT',
+          bagId: id,
+          bagSize: bag ? bag.size : 'N/A',
+          location: finalLoc,
+          group: finalGrp,
+          date: date,
+          notes: notes || 'Checked out',
+          timestamp: Date.now()
+        });
+      });
+
+      alert(`Successfully checked out ${selectedBagIds.length} bag(s) to ${finalLoc}.`);
+      selectedBagIds = [];
+      document.getElementById('out-notes').value = '';
+      saveData();
+      renderAll();
+    }
+
+    // CHECKIN VIEW RENDERER
+    function renderCheckinView() {
+      const container = document.getElementById('checkin-groups-container');
+      container.innerHTML = '';
+      const checkedOutBags = bags.filter(b => b.status === 'Checked Out');
+
+      if (checkedOutBags.length === 0) {
+        container.innerHTML = `
+          <div class="p-8 text-center rounded-xl border bg-slate-50 dark:bg-[#1A1A1A] border-slate-200 dark:border-slate-700 text-slate-500 space-y-2">
+            <i data-lucide="check-circle-2" class="w-8 h-8 text-emerald-500 mx-auto"></i>
+            <p class="font-semibold text-slate-900 dark:text-white">All TMS Bags are in Catering Room.</p>
+            <p class="text-xs">There are currently no bags checked out.</p>
+          </div>
+        `;
+        return;
+      }
+
+      const groupsMap = {};
+      checkedOutBags.forEach(bag => {
+        const key = `${bag.location || 'Unknown'}|||${bag.group || 'No Group'}|||${bag.checkoutDate || 'N/A'}`;
+        if (!groupsMap[key]) {
+          groupsMap[key] = { location: bag.location, group: bag.group, checkoutDate: bag.checkoutDate, bags: [] };
+        }
+        groupsMap[key].bags.push(bag);
+      });
+
+      Object.values(groupsMap).forEach(g => {
+        const div = document.createElement('div');
+        div.className = "bg-slate-50 dark:bg-[#1A1A1A] border border-slate-200 dark:border-slate-700 rounded-xl p-5 space-y-4 shadow-sm";
+        
+        let bagsHtml = '';
+        g.bags.forEach(b => {
+          bagsHtml += `
+            <div class="bg-white dark:bg-[#262626] border border-slate-200 dark:border-slate-700 rounded-lg p-3 flex items-center justify-between shadow-xs">
+              <div>
+                <span class="font-bold text-sm text-[#1A1A1A] dark:text-white">Bag #${b.id}</span>
+                <span class="text-xs text-slate-500 block font-mono">${b.size} Size</span>
+              </div>
+              <button onclick="checkInSingle('${b.id}')" class="px-2.5 py-1 rounded-lg font-semibold text-xs transition-all flex items-center gap-1 bg-slate-100 dark:bg-[#1A1A1A] hover:bg-emerald-600 text-slate-700 dark:text-slate-300 hover:text-white">
+                <i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i> Check In
+              </button>
+            </div>
+          `;
+        });
+
+        div.innerHTML = `
+          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pb-3 border-b border-slate-200 dark:border-slate-800">
+            <div>
+              <div class="flex items-center gap-2">
+                <i data-lucide="map-pin" class="w-4 h-4 text-[#E51739]"></i>
+                <h3 class="font-bold text-base text-[#1A1A1A] dark:text-white">${g.location}</h3>
+              </div>
+              <div class="flex items-center gap-4 text-xs mt-1 text-slate-500">
+                ${g.group ? `<span class="flex items-center gap-1"><i data-lucide="users" class="w-3.5 h-3.5"></i> Group: ${g.group}</span>` : ''}
+                <span>Date Checked Out: ${g.checkoutDate}</span>
+              </div>
+            </div>
+            <button onclick="checkInGroup('${g.location}', '${g.group}', '${g.checkoutDate}')" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-all flex items-center gap-1.5 shadow-sm">
+              <i data-lucide="arrow-down-left" class="w-4 h-4"></i> Check In Entire Group (${g.bags.length} Bags)
+            </button>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">${bagsHtml}</div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function checkInSingle(bagId) {
+      const bag = bags.find(b => b.id === bagId);
+      if (!bag) return;
+
+      bags = bags.map(b => b.id === bagId ? { ...b, status: 'Available', location: 'Catering Room', group: '', checkoutDate: '' } : b);
+      logs.unshift({
+        id: 'log-' + Date.now() + '-' + bagId,
+        action: 'CHECK_IN',
+        bagId: bagId,
+        bagSize: bag.size,
+        location: bag.location,
+        group: bag.group,
+        date: new Date().toISOString().slice(0, 10),
+        notes: 'Returned to catering room',
+        timestamp: Date.now()
+      });
+      saveData();
+      renderAll();
+    }
+
+    function checkInGroup(loc, grp, date) {
+      const targetBags = bags.filter(b => b.status === 'Checked Out' && b.location === loc && b.group === grp && b.checkoutDate === date);
+      targetBags.forEach(b => {
+        checkInSingle(b.id);
+      });
+    }
+
+    // BAGS ROSTER RENDERER
+    function renderBagsTable() {
+      const tbody = document.getElementById('bags-table-body');
+      tbody.innerHTML = '';
+      bags.forEach(b => {
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-50 dark:hover:bg-[#1A1A1A]/50 transition-colors";
+        tr.innerHTML = `
+          <td class="px-4 py-3 font-bold text-[#1A1A1A] dark:text-white">Bag #${b.id}</td>
+          <td class="px-4 py-3"><span class="px-2 py-0.5 rounded text-xs font-mono bg-slate-100 dark:bg-[#1A1A1A] text-slate-700 dark:text-slate-300">${b.size}</span></td>
+          <td class="px-4 py-3">
+            ${b.status === 'Available' 
+              ? '<span class="px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20 text-xs font-semibold">Available</span>'
+              : '<span class="px-2.5 py-1 rounded-full bg-red-50 dark:bg-red-500/10 text-[#E51739] dark:text-red-400 border border-red-200 dark:border-red-500/20 text-xs font-semibold">Checked Out</span>'
+            }
+          </td>
+          <td class="px-4 py-3 text-xs">${b.location || 'Catering Room'}</td>
+          <td class="px-4 py-3 text-xs">${b.group || '—'}</td>
+          <td class="px-4 py-3 text-xs text-slate-500">${b.checkoutDate || '—'}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // HISTORY RENDERER
+    function renderHistory() {
+      const container = document.getElementById('history-batches-container');
+      const search = document.getElementById('history-search').value.toLowerCase();
+      const actionFilter = document.getElementById('history-filter-action').value;
+      const sizeFilter = document.getElementById('history-filter-size').value;
+
+      container.innerHTML = '';
+
+      const filtered = logs.filter(l => {
+        const matchSearch = l.bagId.toLowerCase().includes(search) || l.location.toLowerCase().includes(search) || (l.group && l.group.toLowerCase().includes(search));
+        const matchAction = actionFilter === 'ALL' || l.action === actionFilter;
+        const matchSize = sizeFilter === 'ALL' || l.bagSize === sizeFilter;
+        return matchSearch && matchAction && matchSize;
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = '<div class="p-8 text-center text-xs rounded-xl border bg-slate-50 dark:bg-[#1A1A1A] border-slate-200 dark:border-slate-700 text-slate-500">No history records found.</div>';
+        return;
+      }
+
+      const batchesMap = {};
+      filtered.forEach(l => {
+        const key = `${l.action}|||${l.location}|||${l.group || ''}|||${l.date}`;
+        if (!batchesMap[key]) {
+          batchesMap[key] = { action: l.action, location: l.location, group: l.group, date: l.date, logs: [] };
+        }
+        batchesMap[key].logs.push(l);
+      });
+
+      Object.values(batchesMap).forEach(b => {
+        const div = document.createElement('div');
+        div.className = "bg-slate-50 dark:bg-[#1A1A1A] border border-slate-200 dark:border-slate-700 rounded-xl p-5 space-y-4 shadow-sm";
+
+        let itemsHtml = '';
+        b.logs.forEach(item => {
+          itemsHtml += `
+            <div class="bg-white dark:bg-[#222222] border border-slate-200 dark:border-slate-700 rounded-lg p-3 space-y-1 shadow-xs">
+              <div class="flex items-center justify-between">
+                <span class="font-bold text-sm text-[#1A1A1A] dark:text-white">Bag #${item.bagId}</span>
+                <span class="text-xs text-slate-500 font-mono">${item.bagSize} Size</span>
+              </div>
+              <p class="text-[11px] text-slate-500 italic">${item.notes || 'No notes'}</p>
+            </div>
+          `;
+        });
+
+        div.innerHTML = `
+          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pb-3 border-b border-slate-200 dark:border-slate-800">
+            <div>
+              <div class="flex items-center gap-2.5">
+                ${b.action === 'CHECK_OUT' 
+                  ? '<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded text-xs font-bold bg-red-50 dark:bg-red-500/10 text-[#E51739] dark:text-red-400 border border-red-200 dark:border-red-500/20"><i data-lucide="arrow-up-right" class="w-3.5 h-3.5"></i> Check Out</span>'
+                  : '<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded text-xs font-bold bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20"><i data-lucide="arrow-down-left" class="w-3.5 h-3.5"></i> Check In</span>'
+                }
+                <div class="flex items-center gap-1.5 font-bold text-sm text-[#1A1A1A] dark:text-white">
+                  <i data-lucide="map-pin" class="w-4 h-4 text-[#E51739]"></i> ${b.location}
+                </div>
+              </div>
+              <div class="flex items-center gap-4 text-xs mt-1.5 text-slate-500">
+                ${b.group ? `<span class="flex items-center gap-1"><i data-lucide="users" class="w-3.5 h-3.5"></i> Group: ${b.group}</span>` : ''}
+                <span>Date: ${b.date}</span>
+              </div>
+            </div>
+            <span class="px-3 py-1 rounded-lg text-xs font-bold border bg-white dark:bg-[#222222] border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300">
+              ${b.logs.length} Bag(s) Batched
+            </span>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">${itemsHtml}</div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function exportCSV() {
+      const headers = ['Log ID', 'Action', 'Bag ID', 'Bag Size', 'Location', 'Group', 'Date', 'Notes'];
+      const rows = logs.map(l => [l.id, l.action, l.bagId, l.bagSize, `"${l.location}"`, `"${l.group || ''}"`, l.date, `"${(l.notes || '').replace(/"/g, '""')}"`]);
+      const csv = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+      const link = document.createElement('a');
+      link.setAttribute('href', encodeURI(csv));
+      link.setAttribute('download', `TMS_Bag_Log_${new Date().toISOString().slice(0, 10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    // LOCATIONS MANAGER RENDERER
+    function renderLocationsManager() {
+      const grid = document.getElementById('locations-grid');
+      grid.innerHTML = '';
+      locations.forEach((loc, lIndex) => {
+        let groupsHtml = '';
+        loc.groups.forEach((g, gIndex) => {
+          groupsHtml += `
+            <span class="inline-flex items-center gap-1.5 border px-2.5 py-1 rounded-lg text-xs bg-white dark:bg-[#222222] text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700">
+              <i data-lucide="users" class="w-3 h-3 text-slate-400"></i> ${g}
+              <button onclick="deleteGroup('${loc.id}', ${gIndex})" class="text-slate-400 hover:text-rose-500 ml-1"><i data-lucide="x" class="w-3 h-3"></i></button>
+            </span>
+          `;
+        });
+
+        const div = document.createElement('div');
+        div.className = "bg-slate-50 dark:bg-[#1A1A1A] border border-slate-200 dark:border-slate-700 p-4 rounded-xl space-y-3";
+        div.innerHTML = `
+          <div class="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
+            <span class="font-bold text-sm flex items-center gap-2 text-[#1A1A1A] dark:text-white">
+              <i data-lucide="map-pin" class="w-4 h-4 text-[#E51739]"></i> ${loc.name}
+            </span>
+            <button onclick="deleteLocation('${loc.id}')" class="text-slate-400 hover:text-rose-500 transition-colors p-1"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+          </div>
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-2">Groups (${loc.groups.length})</label>
+            <div class="flex flex-wrap gap-1.5 mb-3">${groupsHtml}</div>
+            <div class="flex gap-2 mt-2">
+              <input type="text" id="new-grp-${loc.id}" placeholder="" class="flex-1 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none bg-white dark:bg-[#222222] text-slate-900 dark:text-white" />
+              <button onclick="addGroup('${loc.id}')" class="px-3 py-1.5 bg-[#E51739] hover:bg-red-700 text-white font-bold text-xs rounded-lg">+ Add</button>
+            </div>
+          </div>
+        `;
+        grid.appendChild(div);
+      });
+    }
+
+    function addLocation() {
+      const name = document.getElementById('new-loc-input').value.trim();
+      if (!name) return;
+      locations.push({ id: 'loc-' + Date.now(), name, groups: [] });
+      document.getElementById('new-loc-input').value = '';
+      saveData();
+      renderAll();
+    }
+
+    function deleteLocation(id) {
+      locations = locations.filter(l => l.id !== id);
+      saveData();
+      renderAll();
+    }
+
+    function addGroup(locId) {
+      const input = document.getElementById(`new-grp-${locId}`);
+      const val = input.value.trim();
+      if (!val) return;
+      locations = locations.map(l => l.id === locId ? { ...l, groups: [...l.groups, val] } : l);
+      saveData();
+      renderAll();
+    }
+
+    function deleteGroup(locId, gIndex) {
+      locations = locations.map(l => {
+        if (l.id === locId) {
+          const updated = [...l.groups];
+          updated.splice(gIndex, 1);
+          return { ...l, groups: updated };
+        }
+        return l;
+      });
+      saveData();
+      renderAll();
+    }
+
+    // MODALS
+    function openModal(type) {
+      document.getElementById(`modal-${type}`).classList.remove('hidden');
+    }
+    function closeModal(type) {
+      document.getElementById(`modal-${type}`).classList.add('hidden');
+    }
+    function renderModalsSelects() {
+      const select = document.getElementById('remove-bag-select');
+      select.innerHTML = '<option value="">-- Choose Bag --</option>';
+      bags.forEach(b => {
+        const opt = document.createElement('option');
+        opt.value = b.id;
+        opt.textContent = `Bag #${b.id} (${b.size}) — ${b.status}`;
+        select.appendChild(opt);
+      });
+    }
+
+    function handleAddNewBag(e) {
+      e.preventDefault();
+      const id = document.getElementById('add-bag-number').value.trim();
+      const size = document.getElementById('add-bag-size').value;
+      const desc = document.getElementById('add-bag-desc').value.trim();
+
+      if (bags.some(b => b.id.toLowerCase() === id.toLowerCase())) {
+        alert(`Bag ID "${id}" already exists!`);
+        return;
+      }
+
+      bags.push({ id, size, description: desc || `${size} TMS Bag`, status: 'Available', location: 'Catering Room', group: '', checkoutDate: '' });
+      closeModal('add-bag');
+      document.getElementById('add-bag-number').value = '';
+      document.getElementById('add-bag-desc').value = '';
+      saveData();
+      renderAll();
+    }
+
+    function handleRemoveBag(e) {
+      e.preventDefault();
+      const id = document.getElementById('remove-bag-select').value;
+      const bag = bags.find(b => b.id === id);
+      if (bag && bag.status === 'Checked Out') {
+        alert(`Cannot remove Bag #${id} because it is currently checked out.`);
+        return;
+      }
+      bags = bags.filter(b => b.id !== id);
+      closeModal('remove-bag');
+      saveData();
+      renderAll();
+    }
+  </script>
+</body>
+</html>
